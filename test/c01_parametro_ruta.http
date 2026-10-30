@@ -1,0 +1,33 @@
+# C-01 · Parámetro de ruta no entero, con sesión (RN-18)
+# Qué demuestra: un id de ruta que no es entero (o no entra en un BIGINT) da 422 y nunca llega al handler ni a la base.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin (abre la sesión)
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK — cookie access_token en la jarra de REST Client
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### C-01 · GET /ordenes/abc
+# Esperado: 422 Unprocessable Entity — {"detail": [{"type": "int_parsing", "loc": ["path", "orden_id"], ...}]}
+GET {{base}}/ordenes/abc
+
+### C-01 · GET /clientes/uno
+# Esperado: 422 Unprocessable Entity — error de validación en path.cliente_id
+GET {{base}}/clientes/uno
+
+### C-01 · GET /repuestos/1.5
+# Esperado: 422 Unprocessable Entity — error de validación en path.repuesto_id
+GET {{base}}/repuestos/1.5
+
+### C-01 · id entero pero fuera del rango de BIGINT (no es 500)
+# Esperado: 422 Unprocessable Entity — error de validación en path.orden_id (no consulta la base)
+GET {{base}}/ordenes/99999999999999999999
+
+### Control: un id válido que no existe sigue siendo 404
+# Esperado: 404 Not Found
+GET {{base}}/ordenes/99999

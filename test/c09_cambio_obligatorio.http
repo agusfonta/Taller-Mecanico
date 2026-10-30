@@ -1,0 +1,42 @@
+# C-09 · Cambio obligatorio de contraseña (RN-06, RN-07)
+# Qué demuestra: el usuario `nuevo` (con debe_cambiar_password) queda bloqueado (403) fuera de /auth; tras cambiar la
+# contraseña, la cookie nueva vale y la anterior da 401, sin esperar entre el login y el cambio.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar; la nueva la elegís vos (mínimo 8 caracteres).
+@base = http://localhost:8000
+
+### Login de nuevo (la cookie queda en la jarra y también nombrada)
+# @name loginNuevo
+# @prompt clave_nuevo Contraseña de nuevo@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK — "debe_cambiar_password": true
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "nuevo@example.com", "password": "{{clave_nuevo}}"}
+
+### Bloqueado fuera de /auth
+# Esperado: 403 Forbidden
+GET {{base}}/repuestos
+
+### /auth/yo sí está permitido
+# Esperado: 200 OK — debe_cambiar_password true
+GET {{base}}/auth/yo
+
+### Cambio de contraseña
+# @prompt clave_nuevo Contraseña actual de nuevo@example.com (CONTRASENAS_SEED en seed.py)
+# @prompt clave_elegida Contraseña nueva (mínimo 8 caracteres)
+# Esperado: 200 OK — emite una cookie nueva (reemplaza la de la jarra)
+POST {{base}}/auth/cambiar-password
+Content-Type: application/json
+
+{"password_actual": "{{clave_nuevo}}", "password_nueva": "{{clave_elegida}}"}
+
+### Con la cookie nueva ya no está bloqueado
+# Esperado: 200 OK
+GET {{base}}/repuestos
+
+### La cookie anterior (la del primer login) ya no vale
+# @no-cookie-jar
+# Esperado: 401 Unauthorized
+GET {{base}}/auth/yo
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}

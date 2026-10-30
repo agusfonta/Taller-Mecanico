@@ -1,0 +1,61 @@
+# C-12 · Reponer stock y terminar la orden 2 (RN-13, RN-14)
+# Qué demuestra: tras reponer 2 bujías, terminar la orden 2 da 200, baja el stock, deja los movimientos y la línea de
+# historial. El aviso al cliente sale en la CONSOLA DEL SERVIDOR después de la respuesta 200 (no en esta respuesta):
+#   INFO app.modules.ordenes.avisos: Aviso a cliente 2: orden 2 terminada
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Dos sesiones a la vez: cada login lleva su propio nombre y los pedidos de esa sesión envían SU cookie con `# @no-cookie-jar`.
+# Contraseñas: REST Client las pide al enviar cada login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin
+# @name loginAdmin
+# @no-cookie-jar
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Login del mecánico asignado
+# @name loginMecanico
+# @no-cookie-jar
+# @prompt clave_mecanico Contraseña de mecanico@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "mecanico@example.com", "password": "{{clave_mecanico}}"}
+
+### Reponer 2 bujías (de 2 a 4)
+# @no-cookie-jar
+# Esperado: 200 OK — stock 4
+POST {{base}}/repuestos/3/reponer
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{"cantidad": 2}
+
+### Terminar la orden 2
+# @no-cookie-jar
+# Esperado: 200 OK — estado TERMINADA (mirar la consola del servidor: el aviso aparece DESPUÉS de esta respuesta)
+POST {{base}}/ordenes/2/terminar
+Cookie: {{loginMecanico.response.headers.Set-Cookie}}
+
+### Bujías: el stock quedó en 0
+# @no-cookie-jar
+# Esperado: 200 OK — stock 0
+GET {{base}}/repuestos/3
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Movimientos de las bujías
+# @no-cookie-jar
+# Esperado: 200 OK — el ingreso inicial (+2), la reposición (+2) y la salida por la orden 2 (-4, orden_id 2)
+GET {{base}}/repuestos/3/movimientos
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Detalle de la orden: línea de historial EN_REPARACION -> TERMINADA
+# @no-cookie-jar
+# Esperado: 200 OK — estado TERMINADA
+GET {{base}}/ordenes/2
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}

@@ -1,0 +1,35 @@
+# C-06 · 401 vs. 403, y lo propio (RN-04, RN-17)
+# Qué demuestra: sin sesión es 401; con sesión pero sin el rol es 403; un cliente ve su propia orden (200) y no la ajena (403).
+# En el seed la orden 1 es del vehículo de Laura (usuario `cliente`) y la orden 2 del de Jorge.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Sin sesión
+# @no-cookie-jar
+# Esperado: 401 Unauthorized
+GET {{base}}/ordenes/1
+
+### Login del cliente (Laura)
+# @prompt clave_cliente Contraseña de cliente@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "cliente@example.com", "password": "{{clave_cliente}}"}
+
+### Con sesión pero sin el rol (el cliente no es personal)
+# Esperado: 403 Forbidden
+GET {{base}}/repuestos
+
+### El cliente ve su propia orden
+# Esperado: 200 OK — orden 1 con sus ítems
+GET {{base}}/ordenes/1
+
+### El cliente NO ve la orden ajena
+# Esperado: 403 Forbidden
+GET {{base}}/ordenes/2
+
+### El cliente ve su listado propio
+# Esperado: 200 OK — sólo la orden 1
+GET {{base}}/mis-ordenes

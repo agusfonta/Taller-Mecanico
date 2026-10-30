@@ -1,0 +1,50 @@
+# C-13 · Cancelar una orden (RN-12)
+# Qué demuestra: el dueño cancela su orden pendiente (200); no puede cancelar una ajena (403); una orden terminada no
+# se cancela (409).
+# En el seed la orden 1 (PENDIENTE) es del vehículo de Laura (usuario `cliente`) y la orden 2 del de Jorge.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar los logins; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login del cliente (Laura)
+# @prompt clave_cliente Contraseña de cliente@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "cliente@example.com", "password": "{{clave_cliente}}"}
+
+### El dueño cancela su orden pendiente
+# Esperado: 200 OK — estado CANCELADA
+POST {{base}}/ordenes/1/cancelar
+
+### El cliente intenta cancelar la orden ajena
+# Esperado: 403 Forbidden
+POST {{base}}/ordenes/2/cancelar
+
+### Login de admin (reemplaza la sesión)
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Reponer 2 bujías para poder terminar la orden 2
+# Esperado: 200 OK
+POST {{base}}/repuestos/3/reponer
+Content-Type: application/json
+
+{"cantidad": 2}
+
+### Terminar la orden 2 (el admin puede)
+# Esperado: 200 OK — estado TERMINADA
+POST {{base}}/ordenes/2/terminar
+
+### Cancelar una orden terminada
+# Esperado: 409 Conflict
+POST {{base}}/ordenes/2/cancelar
+
+### Cancelar una orden ya cancelada
+# Esperado: 409 Conflict
+POST {{base}}/ordenes/1/cancelar

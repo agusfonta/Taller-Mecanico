@@ -1,0 +1,31 @@
+# C-17 · Catálogo de estados y filtro de órdenes por estado (RN-19)
+# Qué demuestra: el catálogo trae los cuatro estados por posición (TERMINADA y CANCELADA finales); exige sesión (401);
+# filtrar por un estado no declarado da 422.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Catálogo sin sesión
+# @no-cookie-jar
+# Esperado: 401 Unauthorized
+GET {{base}}/estados-orden
+
+### Login de recepción
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### Catálogo con sesión
+# Esperado: 200 OK — PENDIENTE, EN_REPARACION, TERMINADA, CANCELADA en ese orden; es_final true sólo en las dos últimas
+GET {{base}}/estados-orden
+
+### Filtrar por un estado del catálogo
+# Esperado: 200 OK — sólo la orden 2 (EN_REPARACION)
+GET {{base}}/ordenes?estado=EN_REPARACION
+
+### Filtrar por un estado no declarado
+# Esperado: 422 Unprocessable Entity
+GET {{base}}/ordenes?estado=INVENTADO

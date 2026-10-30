@@ -1,0 +1,48 @@
+# C-16 · Búsqueda segura, paginación con filtro, PATCH parcial (RN-14, Ej. 3)
+# Qué demuestra: una búsqueda con inyección SQL no devuelve nada ni rompe (parámetros ligados); la paginación respeta
+# el filtro y rechaza páginas y tamaños inválidos con 422; el PATCH cambia sólo lo enviado; el stock no se edita por PATCH.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Búsqueda con inyección: q = ' OR '1'='1
+# Esperado: 200 OK — {"items": [], "total": 0, ...}
+GET {{base}}/repuestos?q=%27%20OR%20%271%27%3D%271
+
+### Búsqueda "freno" con tamaño 1
+# Esperado: 200 OK — un ítem (FRE-010), total 1, pages 1
+GET {{base}}/repuestos?q=freno&size=1
+
+### Página 2 de esa búsqueda (no existe)
+# Esperado: 422 Unprocessable Entity
+GET {{base}}/repuestos?q=freno&size=1&page=2
+
+### Tamaño de página excesivo
+# Esperado: 422 Unprocessable Entity
+GET {{base}}/repuestos?size=500
+
+### PATCH parcial: sólo la descripción
+# Esperado: 200 OK — descripcion "Pastillas de freno delanteras"; el precio sigue en 25000.00
+PATCH {{base}}/repuestos/2
+Content-Type: application/json
+
+{"descripcion": "Pastillas de freno delanteras"}
+
+### El precio no cambió
+# Esperado: 200 OK — precio 25000.00
+GET {{base}}/repuestos/2
+
+### PATCH del stock (no se edita por acá)
+# Esperado: 422 Unprocessable Entity
+PATCH {{base}}/repuestos/2
+Content-Type: application/json
+
+{"stock": 99}

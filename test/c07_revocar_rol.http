@@ -1,0 +1,76 @@
+# C-07 · Revocar un rol con la sesión abierta; vencimientos inválidos (RN-04)
+# Qué demuestra: el admin revoca el rol de `recepcion`; con la MISMA cookie, la petición siguiente de recepción da 403
+# (los roles se leen de la base en cada petición); /auth/yo muestra la diferencia entre roles_vigentes y roles_token;
+# la fila revocada se conserva; un vencimiento pasado o sin zona horaria da 422.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Dos sesiones a la vez: cada login lleva su propio nombre y los pedidos de esa sesión envían SU cookie con `# @no-cookie-jar`.
+# Contraseñas: REST Client las pide al enviar cada login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin (sesión 1)
+# @name loginAdmin
+# @no-cookie-jar
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Login de recepción (sesión 2)
+# @name loginRecepcion
+# @no-cookie-jar
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### Recepción trabaja con normalidad
+# @no-cookie-jar
+# Esperado: 200 OK — el detalle del cliente 1
+GET {{base}}/clientes/1
+Cookie: {{loginRecepcion.response.headers.Set-Cookie}}
+
+### Admin revoca el rol RECEPCION del usuario 3
+# @no-cookie-jar
+# Esperado: 200 OK — la asignación con revocada_en completo y vigente false
+DELETE {{base}}/usuarios/3/roles/RECEPCION
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Misma cookie de recepción: ahora no tiene el rol
+# @no-cookie-jar
+# Esperado: 403 Forbidden
+GET {{base}}/clientes/1
+Cookie: {{loginRecepcion.response.headers.Set-Cookie}}
+
+### /auth/yo con la misma cookie: la diferencia
+# @no-cookie-jar
+# Esperado: 200 OK — roles_vigentes [] (base) frente a roles_token ["RECEPCION"] (lo que dice la cookie)
+GET {{base}}/auth/yo
+Cookie: {{loginRecepcion.response.headers.Set-Cookie}}
+
+### La fila revocada sigue en la base
+# @no-cookie-jar
+# Esperado: 200 OK — asignaciones incluye RECEPCION con revocada_en y vigente false
+GET {{base}}/usuarios/3/roles
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Vencimiento en el pasado
+# @no-cookie-jar
+# Esperado: 422 Unprocessable Entity
+POST {{base}}/usuarios/4/roles
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{"rol": "RECEPCION", "vence_en": "2020-01-01T00:00:00+00:00"}
+
+### Vencimiento sin zona horaria
+# @no-cookie-jar
+# Esperado: 422 Unprocessable Entity
+POST {{base}}/usuarios/4/roles
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{"rol": "RECEPCION", "vence_en": "2099-01-01T00:00:00"}

@@ -1,0 +1,53 @@
+# C-18 · Historial de precios de un repuesto (RN-20)
+# Qué demuestra: cambiar el precio agrega una línea al historial (precio anterior y nuevo); cambiar sólo la descripción
+# no agrega nada; la recepción no puede ver el historial (403).
+# En el seed el repuesto 1 (FIL-001) ya tiene una línea de historial (8000.00 -> 8500.00).
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar los logins; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Historial inicial
+# Esperado: 200 OK — una línea (8000.00 -> 8500.00)
+GET {{base}}/repuestos/1/precios
+
+### Cambiar el precio
+# Esperado: 200 OK — precio 9000.00
+PATCH {{base}}/repuestos/1
+Content-Type: application/json
+
+{"precio": "9000.00"}
+
+### Historial tras el cambio de precio
+# Esperado: 200 OK — dos líneas; la nueva con precio_anterior 8500.00 y precio_nuevo 9000.00
+GET {{base}}/repuestos/1/precios
+
+### Cambiar sólo la descripción
+# Esperado: 200 OK
+PATCH {{base}}/repuestos/1
+Content-Type: application/json
+
+{"descripcion": "Filtro de aceite reforzado"}
+
+### El historial no cambió
+# Esperado: 200 OK — siguen siendo dos líneas
+GET {{base}}/repuestos/1/precios
+
+### Login de recepción (reemplaza la sesión)
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### La recepción no ve el historial
+# Esperado: 403 Forbidden
+GET {{base}}/repuestos/1/precios

@@ -1,0 +1,37 @@
+# C-10 · Alta de orden con dos ítems (RN-10)
+# Qué demuestra: la orden se crea con los precios copiados del catálogo, el total y el historial; si un repuesto no
+# existe la respuesta es 409 y la orden no queda creada.
+# En el seed el vehículo 1 es de Laura; los repuestos 2 (FRE-010, 25000.00) y 4 (ACE-530, 6000.00) tienen stock.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de recepción
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### Alta con dos ítems
+# Esperado: 201 Created — id 3, estado PENDIENTE, ítems con precio_unitario 25000.00 y 6000.00, total 37000.00
+POST {{base}}/ordenes
+Content-Type: application/json
+
+{"vehiculo_id": 1, "falla": "Ruido en los frenos", "items": [{"repuesto_id": 2, "cantidad": 1}, {"repuesto_id": 4, "cantidad": 2}]}
+
+### El detalle de la orden creada (con su historial)
+# Esperado: 200 OK — dos ítems, total 37000.00 e historial con la entrada inicial a PENDIENTE
+GET {{base}}/ordenes/3
+
+### Alta con un repuesto inexistente
+# Esperado: 409 Conflict — {"detail": "..."} nombra el repuesto
+POST {{base}}/ordenes
+Content-Type: application/json
+
+{"vehiculo_id": 1, "falla": "No debe crearse", "items": [{"repuesto_id": 2, "cantidad": 1}, {"repuesto_id": 99999, "cantidad": 1}]}
+
+### La orden rechazada no quedó creada (el próximo id, el 4, no existe)
+# Esperado: 404 Not Found
+GET {{base}}/ordenes/4

@@ -1,0 +1,9 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.atl/
+.active-orchestrator-state.json
+.claude/
+skills-lock.json
+docs/TP_Cap1a6_Consigna.pdf

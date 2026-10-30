@@ -1,0 +1,23 @@
+# C-04 · Correo existente con clave mala vs. correo inexistente (RN-09)
+# Qué demuestra: ambos casos responden 401 con el MISMO cuerpo (no se puede saber si el correo existe).
+# El tiempo de respuesta también es parecido (hash ficticio): REST Client muestra la duración de cada respuesta;
+# comparar las dos con la misma contraseña y ver que son del mismo orden. Eso no se puede afirmar con un código de estado.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseña: REST Client la pide al enviar (cualquier texto distinto de la real).
+@base = http://localhost:8000
+
+### Correo existente, contraseña incorrecta
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized — {"detail": "Credenciales inválidas"} (idéntico al siguiente)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_incorrecta}}"}
+
+### Correo inexistente, misma contraseña
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera (la misma de antes)
+# Esperado: 401 Unauthorized — el mismo cuerpo que el anterior
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "no.existe@example.com", "password": "{{clave_incorrecta}}"}

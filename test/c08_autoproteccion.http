@@ -1,0 +1,25 @@
+# C-08 · Autoprotección (RN-05)
+# Qué demuestra: un administrador no puede revocarse a sí mismo su rol ADMIN (409); sobre otro usuario sí puede.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin (usuario 1)
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### El admin intenta revocarse su propio ADMIN
+# Esperado: 409 Conflict — {"detail": "..."}
+DELETE {{base}}/usuarios/1/roles/ADMIN
+
+### Sigue siendo administrador
+# Esperado: 200 OK — roles_vigentes incluye ADMIN
+GET {{base}}/auth/yo
+
+### Control: revocar el ADMIN de otro administrador (usuario 2) sí se puede
+# Esperado: 200 OK
+DELETE {{base}}/usuarios/2/roles/ADMIN

@@ -1,0 +1,58 @@
+# C-05 · Seis intentos fallidos seguidos (RN-08)
+# Qué demuestra: tras 5 fallos seguidos del mismo correo desde la misma IP, el 6.º intento da 429 con Retry-After (los
+# segundos que faltan para que termine el bloqueo) y responde en pocos ms porque ya no calcula bcrypt; los 5 fallos
+# quedan registrados en intento_acceso (el intento bloqueado no se registra).
+# Se usa `recepcion` para no dejar bloqueado a `admin` en los demás archivos (el seed vacía intento_acceso al correrse).
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseña: REST Client la pide al enviar (cualquier texto distinto de la real).
+# Verificación opcional en psql, al terminar:
+#   SELECT email, exito FROM intento_acceso ORDER BY id;   -- 5 filas con exito = false
+@base = http://localhost:8000
+
+### Intento fallido 1
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}
+
+### Intento fallido 2
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}
+
+### Intento fallido 3
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}
+
+### Intento fallido 4
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}
+
+### Intento fallido 5
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 401 Unauthorized
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}
+
+### Intento 6: bloqueado
+# @prompt clave_incorrecta Una contraseña incorrecta cualquiera
+# Esperado: 429 Too Many Requests — encabezado Retry-After con los segundos restantes (verlo en la respuesta)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_incorrecta}}"}

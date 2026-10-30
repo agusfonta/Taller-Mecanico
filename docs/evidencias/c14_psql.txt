@@ -1,0 +1,23 @@
+> docker compose exec -T postgres psql -U taller -d taller_entrega < test/solo_agregado.sql
+ERROR:  La tabla historial_estado_orden es de sólo agregado: UPDATE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  La tabla historial_estado_orden es de sólo agregado: DELETE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  La tabla movimiento_stock es de sólo agregado: UPDATE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  La tabla movimiento_stock es de sólo agregado: DELETE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  La tabla historial_precio_repuesto es de sólo agregado: UPDATE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  La tabla historial_precio_repuesto es de sólo agregado: DELETE no permitido
+CONTEXT:  PL/pgSQL function rechazar_modificacion_solo_agregado() line 3 at RAISE
+ERROR:  insert or update on table "orden_trabajo" violates foreign key constraint "fk_orden_trabajo_estado_estado_orden"
+DETAIL:  Key (estado)=(INEXISTENTE) is not present in table "estado_orden".
+           tabla           | count 
+---------------------------+-------
+ historial_estado_orden    |     3
+ movimiento_stock          |     4
+ historial_precio_repuesto |     1
+ orden_trabajo             |     2
+(4 rows)
+

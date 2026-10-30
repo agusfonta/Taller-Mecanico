@@ -1,0 +1,40 @@
+# C-02 · Registro; correo y documento repetidos (RN-01, RN-02)
+# Qué demuestra: el registro crea la cuenta (201); un correo o un documento repetido da 409 con mensaje propio y
+# el pedido rechazado no deja filas sueltas (comprobable con la consulta SQL sugerida abajo).
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseña de la cuenta nueva: REST Client la pide al enviar (elegí una de 8 caracteres o más).
+# Verificación opcional en psql, antes y después de los rechazos:
+#   SELECT (SELECT count(*) FROM usuario) AS usuarios, (SELECT count(*) FROM cliente) AS clientes;
+@base = http://localhost:8000
+
+### Registro correcto
+# @prompt clave_elegida Contraseña para la cuenta nueva (mínimo 8 caracteres)
+# Esperado: 201 Created — {"id": 8, "email": "alta.nueva@example.com", ..., "roles": ["CLIENTE"]}
+POST {{base}}/auth/registro
+Content-Type: application/json
+
+{"email": "alta.nueva@example.com", "password": "{{clave_elegida}}", "nombre": "Alta Nueva", "documento": "40111222", "telefono": "1155550199"}
+
+### Correo repetido (el de la cuenta recién creada), documento nuevo
+# @prompt clave_elegida Contraseña para la cuenta nueva (mínimo 8 caracteres)
+# Esperado: 409 Conflict — {"detail": "..."} con mensaje propio del correo (no un IntegrityError)
+POST {{base}}/auth/registro
+Content-Type: application/json
+
+{"email": "alta.nueva@example.com", "password": "{{clave_elegida}}", "nombre": "Otra Persona", "documento": "40999888", "telefono": "1155550198"}
+
+### Documento repetido (el de Laura en el seed), correo nuevo
+# @prompt clave_elegida Contraseña para la cuenta nueva (mínimo 8 caracteres)
+# Esperado: 409 Conflict — {"detail": "..."} con mensaje propio del documento
+POST {{base}}/auth/registro
+Content-Type: application/json
+
+{"email": "otro.correo@example.com", "password": "{{clave_elegida}}", "nombre": "Otra Persona", "documento": "30111222", "telefono": "1155550197"}
+
+### Correo repetido con otras mayúsculas (el correo se normaliza)
+# @prompt clave_elegida Contraseña para la cuenta nueva (mínimo 8 caracteres)
+# Esperado: 409 Conflict
+POST {{base}}/auth/registro
+Content-Type: application/json
+
+{"email": "ALTA.Nueva@Example.com", "password": "{{clave_elegida}}", "nombre": "Otra Persona", "documento": "40999777", "telefono": "1155550196"}

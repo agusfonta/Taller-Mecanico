@@ -1,0 +1,37 @@
+# C-19 · Baja de vehículo y re-registro de la patente (RN-01, RN-16)
+# Qué demuestra: un vehículo sin órdenes se da de baja (204, baja lógica) y su patente se puede volver a registrar (201);
+# con la patente vigente de nuevo, un segundo registro igual da 409; un vehículo con órdenes no se da de baja (409).
+# En el seed el vehículo 2 (AC456DE, de Laura) no tiene órdenes; el 1 sí.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de recepción
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### Baja del vehículo 2 (sin órdenes)
+# Esperado: 204 No Content
+DELETE {{base}}/vehiculos/2
+
+### Re-registro de la misma patente
+# Esperado: 201 Created — un vehículo nuevo con patente AC456DE
+POST {{base}}/clientes/1/vehiculos
+Content-Type: application/json
+
+{"patente": "AC456DE", "marca": "Ford", "modelo": "Fiesta", "anio": 2020}
+
+### Segundo registro de la patente vigente
+# Esperado: 409 Conflict
+POST {{base}}/clientes/1/vehiculos
+Content-Type: application/json
+
+{"patente": "AC456DE", "marca": "Ford", "modelo": "Fiesta", "anio": 2020}
+
+### Baja de un vehículo con órdenes (el 1)
+# Esperado: 409 Conflict
+DELETE {{base}}/vehiculos/1

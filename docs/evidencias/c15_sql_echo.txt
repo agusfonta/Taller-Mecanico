@@ -1,0 +1,64 @@
+C-15 - Detalle de orden con 2 y con 4 items: la misma cantidad de consultas
+Servidor: SQL_ECHO=true uvicorn main:app (base taller_entrega, recien migrada y sembrada)
+Pedidos (test/c15_detalle_consultas.http): login de recepcion, POST /ordenes con los 4 repuestos (orden 3),
+GET /ordenes/1 (2 items) y GET /ordenes/3 (4 items). Abajo, lo que imprimio la consola entre cada GET y su linea de acceso.
+
+Resultado: GET /ordenes/1 (2 items) -> 5 sentencias SELECT ; GET /ordenes/3 (4 items) -> 5 sentencias SELECT
+  (2 del control de acceso: usuario y roles vigentes; 3 del detalle: orden+vehiculo+cliente, items+repuesto, historial).
+  Mismo numero de consultas con 2 y con 4 items: no hay N+1.
+
+----- consola del servidor -----
+### GET /ordenes/1 (2 items)
+2026-10-30 11:44:49,555 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-10-30 11:44:49,556 INFO sqlalchemy.engine.Engine SELECT usuario.id, usuario.email, usuario.nombre, usuario.password_hash, usuario.activo, usuario.debe_cambiar_password, usuario.password_cambiada_en 
+FROM usuario 
+WHERE usuario.id = $1::BIGINT
+2026-10-30 11:44:49,557 INFO sqlalchemy.engine.Engine [cached since 19.79s ago] (3,)
+2026-10-30 11:44:49,564 INFO sqlalchemy.engine.Engine SELECT asignacion_rol.rol 
+FROM asignacion_rol 
+WHERE asignacion_rol.usuario_id = $1::BIGINT AND asignacion_rol.revocada_en IS NULL AND (asignacion_rol.vence_en IS NULL OR asignacion_rol.vence_en > $2::TIMESTAMP WITH TIME ZONE) ORDER BY asignacion_rol.rol
+2026-10-30 11:44:49,565 INFO sqlalchemy.engine.Engine [cached since 20.23s ago] (3, datetime.datetime(2026, 10, 30, 14, 44, 49, 549826, tzinfo=datetime.timezone.utc))
+2026-10-30 11:44:49,569 INFO sqlalchemy.engine.Engine COMMIT
+2026-10-30 11:44:49,581 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-10-30 11:44:49,582 INFO sqlalchemy.engine.Engine SELECT orden_trabajo.id, orden_trabajo.vehiculo_id, orden_trabajo.mecanico_id, orden_trabajo.estado, orden_trabajo.falla, orden_trabajo.creada_en, orden_trabajo.total, cliente_1.id AS id_1, cliente_1.usuario_id, cliente_1.nombre, cliente_1.documento, cliente_1.telefono, vehiculo_1.id AS id_2, vehiculo_1.cliente_id, vehiculo_1.patente, vehiculo_1.marca, vehiculo_1.modelo, vehiculo_1.anio, vehiculo_1.borrado_en 
+FROM orden_trabajo LEFT OUTER JOIN vehiculo AS vehiculo_1 ON vehiculo_1.id = orden_trabajo.vehiculo_id LEFT OUTER JOIN cliente AS cliente_1 ON cliente_1.id = vehiculo_1.cliente_id 
+WHERE orden_trabajo.id = $1::BIGINT
+2026-10-30 11:44:49,583 INFO sqlalchemy.engine.Engine [cached since 19.74s ago] (1,)
+2026-10-30 11:44:49,592 INFO sqlalchemy.engine.Engine SELECT item_orden.orden_id, item_orden.id, item_orden.repuesto_id, item_orden.cantidad, item_orden.precio_unitario, repuesto_1.id, repuesto_1.codigo, repuesto_1.descripcion, repuesto_1.precio, repuesto_1.stock, repuesto_1.borrado_en 
+FROM item_orden LEFT OUTER JOIN repuesto AS repuesto_1 ON repuesto_1.id = item_orden.repuesto_id 
+WHERE item_orden.orden_id IN ($1::BIGINT)
+2026-10-30 11:44:49,593 INFO sqlalchemy.engine.Engine [cached since 19.74s ago] (1,)
+2026-10-30 11:44:49,598 INFO sqlalchemy.engine.Engine SELECT historial_estado_orden.orden_id, historial_estado_orden.id, historial_estado_orden.desde_estado, historial_estado_orden.hasta_estado, historial_estado_orden.usuario_id, historial_estado_orden.cuando 
+FROM historial_estado_orden 
+WHERE historial_estado_orden.orden_id IN ($1::BIGINT)
+2026-10-30 11:44:49,599 INFO sqlalchemy.engine.Engine [cached since 19.74s ago] (1,)
+2026-10-30 11:44:49,602 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:57977 - "GET /ordenes/1 HTTP/1.1" 200 OK
+
+### GET /ordenes/3 (4 items)
+2026-10-30 11:44:50,617 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-10-30 11:44:50,635 INFO sqlalchemy.engine.Engine SELECT usuario.id, usuario.email, usuario.nombre, usuario.password_hash, usuario.activo, usuario.debe_cambiar_password, usuario.password_cambiada_en 
+FROM usuario 
+WHERE usuario.id = $1::BIGINT
+2026-10-30 11:44:50,636 INFO sqlalchemy.engine.Engine [cached since 20.87s ago] (3,)
+2026-10-30 11:44:50,642 INFO sqlalchemy.engine.Engine SELECT asignacion_rol.rol 
+FROM asignacion_rol 
+WHERE asignacion_rol.usuario_id = $1::BIGINT AND asignacion_rol.revocada_en IS NULL AND (asignacion_rol.vence_en IS NULL OR asignacion_rol.vence_en > $2::TIMESTAMP WITH TIME ZONE) ORDER BY asignacion_rol.rol
+2026-10-30 11:44:50,642 INFO sqlalchemy.engine.Engine [cached since 21.3s ago] (3, datetime.datetime(2026, 10, 30, 14, 44, 50, 612098, tzinfo=datetime.timezone.utc))
+2026-10-30 11:44:50,645 INFO sqlalchemy.engine.Engine COMMIT
+2026-10-30 11:44:50,654 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-10-30 11:44:50,655 INFO sqlalchemy.engine.Engine SELECT orden_trabajo.id, orden_trabajo.vehiculo_id, orden_trabajo.mecanico_id, orden_trabajo.estado, orden_trabajo.falla, orden_trabajo.creada_en, orden_trabajo.total, cliente_1.id AS id_1, cliente_1.usuario_id, cliente_1.nombre, cliente_1.documento, cliente_1.telefono, vehiculo_1.id AS id_2, vehiculo_1.cliente_id, vehiculo_1.patente, vehiculo_1.marca, vehiculo_1.modelo, vehiculo_1.anio, vehiculo_1.borrado_en 
+FROM orden_trabajo LEFT OUTER JOIN vehiculo AS vehiculo_1 ON vehiculo_1.id = orden_trabajo.vehiculo_id LEFT OUTER JOIN cliente AS cliente_1 ON cliente_1.id = vehiculo_1.cliente_id 
+WHERE orden_trabajo.id = $1::BIGINT
+2026-10-30 11:44:50,656 INFO sqlalchemy.engine.Engine [cached since 20.81s ago] (3,)
+2026-10-30 11:44:50,661 INFO sqlalchemy.engine.Engine SELECT item_orden.orden_id, item_orden.id, item_orden.repuesto_id, item_orden.cantidad, item_orden.precio_unitario, repuesto_1.id, repuesto_1.codigo, repuesto_1.descripcion, repuesto_1.precio, repuesto_1.stock, repuesto_1.borrado_en 
+FROM item_orden LEFT OUTER JOIN repuesto AS repuesto_1 ON repuesto_1.id = item_orden.repuesto_id 
+WHERE item_orden.orden_id IN ($1::BIGINT)
+2026-10-30 11:44:50,661 INFO sqlalchemy.engine.Engine [cached since 20.81s ago] (3,)
+2026-10-30 11:44:50,665 INFO sqlalchemy.engine.Engine SELECT historial_estado_orden.orden_id, historial_estado_orden.id, historial_estado_orden.desde_estado, historial_estado_orden.hasta_estado, historial_estado_orden.usuario_id, historial_estado_orden.cuando 
+FROM historial_estado_orden 
+WHERE historial_estado_orden.orden_id IN ($1::BIGINT)
+2026-10-30 11:44:50,665 INFO sqlalchemy.engine.Engine [cached since 20.8s ago] (3,)
+2026-10-30 11:44:50,667 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:57977 - "GET /ordenes/3 HTTP/1.1" 200 OK
+

@@ -1,0 +1,39 @@
+# C-03 · Cookie del login
+# Qué demuestra: el login entrega el token SOLO en una cookie HttpOnly, SameSite=Lax y con Max-Age (cuerpo sin token);
+# sin cookie, o con un encabezado Authorization: Bearer, el acceso es 401 (el encabezado se ignora).
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de admin
+# @name login
+# @prompt clave_admin Contraseña de admin@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK — encabezado Set-Cookie: access_token=...; HttpOnly; Max-Age=...; SameSite=lax (verlo en la respuesta); cuerpo {"mensaje": ..., "debe_cambiar_password": false, "expira_en_segundos": ...} SIN token
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "{{clave_admin}}"}
+
+### Con la cookie de la jarra
+# Esperado: 200 OK — datos del usuario
+GET {{base}}/auth/yo
+
+### Sin cookie (no usa la jarra)
+# @no-cookie-jar
+# Esperado: 401 Unauthorized
+GET {{base}}/auth/yo
+
+### Con Authorization: Bearer y sin cookie
+# El valor es un texto cualquiera: aunque fuera un JWT bien formado, la API sólo lee la cookie y ignora el encabezado.
+# @no-cookie-jar
+# Esperado: 401 Unauthorized
+GET {{base}}/auth/yo
+Authorization: Bearer token-de-ejemplo-sin-valor
+
+### Cierre de sesión
+# Esperado: 200 OK — la cookie se borra (Set-Cookie con Max-Age=0)
+POST {{base}}/auth/logout
+
+### Tras cerrar sesión
+# Esperado: 401 Unauthorized
+GET {{base}}/auth/yo

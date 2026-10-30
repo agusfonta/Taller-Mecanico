@@ -1,0 +1,32 @@
+# C-15 · Detalle de orden con 2 y con 4 ítems: la misma cantidad de consultas (Ej. 8)
+# Qué demuestra: el detalle de una orden se arma con consultas fijas, sin importar cuántos ítems tenga (sin N+1).
+# Cómo verlo: arrancar el servidor con SQL_ECHO=true, correr este archivo y contar en la consola las sentencias SQL
+# que aparecen entre los pedidos GET /ordenes/1 (2 ítems) y GET /ordenes/3 (4 ítems): deben ser las mismas.
+#   (PowerShell)  $env:SQL_ECHO = "true"; uvicorn main:app
+# La orden 1 del seed tiene 2 ítems; la 3 se crea acá con los 4 repuestos del catálogo.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar el login; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login de recepción
+# @prompt clave_recepcion Contraseña de recepcion@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "recepcion@example.com", "password": "{{clave_recepcion}}"}
+
+### Alta de una orden con los 4 repuestos
+# Esperado: 201 Created — id 3, cuatro ítems
+POST {{base}}/ordenes
+Content-Type: application/json
+
+{"vehiculo_id": 1, "falla": "Revisión completa", "items": [{"repuesto_id": 1, "cantidad": 1}, {"repuesto_id": 2, "cantidad": 1}, {"repuesto_id": 3, "cantidad": 1}, {"repuesto_id": 4, "cantidad": 1}]}
+
+### Detalle de la orden 1 (2 ítems) — contar las sentencias SQL de la consola
+# Esperado: 200 OK — dos ítems
+GET {{base}}/ordenes/1
+
+### Detalle de la orden 3 (4 ítems) — contar las sentencias SQL de la consola
+# Esperado: 200 OK — cuatro ítems
+GET {{base}}/ordenes/3

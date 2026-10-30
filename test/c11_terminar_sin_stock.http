@@ -1,0 +1,30 @@
+# C-11 · Terminar la orden 2 sin stock suficiente (RN-13)
+# Qué demuestra: la orden 2 pide 4 bujías (BUJ-001) y hay 2: terminarla da 409 y NO cambia nada (estado, stock,
+# movimientos ni historial); el filtro de aceite, que sí alcanzaba, tampoco se descuenta.
+# Precondición: correr `python seed.py` antes de este archivo (borra los datos de la base destino).
+# Contraseñas: REST Client las pide al enviar los logins; están en CONTRASENAS_SEED de seed.py y no se escriben acá.
+@base = http://localhost:8000
+
+### Login del mecánico asignado
+# @prompt clave_mecanico Contraseña de mecanico@example.com (CONTRASENAS_SEED en seed.py)
+# Esperado: 200 OK
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "mecanico@example.com", "password": "{{clave_mecanico}}"}
+
+### Terminar la orden 2
+# Esperado: 409 Conflict — {"detail": "..."} nombra BUJ-001
+POST {{base}}/ordenes/2/terminar
+
+### La orden sigue en reparación
+# Esperado: 200 OK — estado EN_REPARACION
+GET {{base}}/ordenes/2
+
+### El stock no cambió (bujías: 2)
+# Esperado: 200 OK — stock 2
+GET {{base}}/repuestos/3
+
+### El filtro de aceite tampoco se descontó (stock 10)
+# Esperado: 200 OK — stock 10
+GET {{base}}/repuestos/1
