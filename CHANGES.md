@@ -298,7 +298,7 @@ GATE 7: C-04 ✓, C-06 ✓, C-10 ✓, C-11 ✓
   - `knowledge-base/07_flujos_principales.md` §Flujo 10
 
 ### [C-12] `verificacion-y-entrega`
-- **Estado**: `[x]` completado (capturas PNG de C-14/C-15 pendientes del usuario)
+- **Estado**: `[x]` completado
 - **Scope**:
   - `test/*.http` cubriendo todos los endpoints y códigos de la tabla de referencia (casos de la KB 11)
   - `test/solo_agregado.sql`: intentos de UPDATE/DELETE sobre las 3 tablas sólo-agregado

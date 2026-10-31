@@ -9,6 +9,8 @@ Todo se corrió sobre una base **nueva y separada** (`taller_entrega`, en el mis
 base de desarrollo (`taller_db`). Se pisó sólo el nombre de la base con la variable de entorno `POSTGRES_DB` en cada comando;
 el resto de la configuración sale del `.env` de siempre.
 
+> Las capturas PNG de C-14 y C-15 (`evidencias/*.png`) se tomaron después, sobre `taller_db` recién sembrada (la base `taller_entrega` ya no existe).
+
 | Paso | Qué se hizo | Resultado |
 |---|---|---|
 | Base nueva | `docker compose exec postgres createdb -U <usuario> taller_entrega` | Creada |
@@ -49,8 +51,8 @@ Todos los `.http` además se ejecutan en `test/integration/test_http_casos.py::t
 | C-11 | `test/c11_terminar_sin_stock.http` | `test/integration/seed/test_seed_http_c11_c12.py::test_terminar_la_orden_2_sin_stock_da_409_con_la_bujia_y_no_cambia_nada_c11` | 409 que nombra BUJ-001; la orden sigue EN_REPARACION y los stocks (2 y 10) no cambian | Aprobado |
 | C-12 | `test/c12_reponer_y_terminar.http` | `test/integration/seed/test_seed_http_c11_c12.py::test_reponer_bujias_y_terminar_la_orden_2_da_200_con_descuentos_c12`; `test/integration/ordenes/test_aviso_http.py::test_un_solo_aviso_con_cliente_y_orden_correctos_tras_el_200` | Reponer 200, terminar 200, stock de bujías en 0, movimientos y línea de historial; el aviso salió una vez en la consola del servidor | Aprobado |
 | C-13 | `test/c13_cancelar.http` | `test/integration/ordenes/test_cancelar_http.py::test_el_dueno_cancela_su_pendiente_con_200_y_sin_tocar_el_stock`; `test/integration/ordenes/test_cancelar_http.py::test_cliente_ajeno_recibe_403_y_la_orden_queda_igual` | El dueño cancela (200); la orden ajena 403; terminada y ya cancelada 409 | Aprobado |
-| C-14 | `test/solo_agregado.sql` | `test/integration/test_solo_agregado_sql.py::test_las_siete_sentencias_fallan_como_se_espera_y_los_conteos_no_cambian`; `test/integration/test_solo_agregado.py::test_update_es_rechazado_y_la_fila_queda_igual` | `psql`: 6 errores del disparador y 1 de clave foránea; conteos iguales (`evidencias/c14_psql.txt`) | Aprobado (falta la captura PNG) |
-| C-15 | `test/c15_detalle_consultas.http` | `test/integration/ordenes/test_consultas_detalle.py::test_el_detalle_ejecuta_la_misma_cantidad_de_sentencias_con_2_y_con_4_items` | 5 sentencias con 2 ítems y 5 con 4 ítems (`evidencias/c15_sql_echo.txt`) | Aprobado (falta la captura PNG) |
+| C-14 | `test/solo_agregado.sql` | `test/integration/test_solo_agregado_sql.py::test_las_siete_sentencias_fallan_como_se_espera_y_los_conteos_no_cambian`; `test/integration/test_solo_agregado.py::test_update_es_rechazado_y_la_fila_queda_igual` | `psql`: 6 errores del disparador y 1 de clave foránea; conteos iguales (`evidencias/c14_psql.txt`, `evidencias/c14_psql.png`) | Aprobado |
+| C-15 | `test/c15_detalle_consultas.http` | `test/integration/ordenes/test_consultas_detalle.py::test_el_detalle_ejecuta_la_misma_cantidad_de_sentencias_con_2_y_con_4_items` | 5 sentencias con 2 ítems y 5 con 4 ítems (`evidencias/c15_sql_echo.txt`, `evidencias/c15_sql_echo_2items.png`, `evidencias/c15_sql_echo_4items.png`) | Aprobado |
 | C-16 | `test/c16_busqueda_paginacion_patch.http` | `test/integration/seed/test_seed_http_catalogo.py::test_busqueda_freno_con_size_1_da_total_1_y_una_pagina_c16` | Búsqueda con inyección: 0 resultados; `q=freno&size=1`: total 1; `page=2` y `size=500`: 422; PATCH parcial 200; PATCH de stock 422 | Aprobado |
 | C-17 | `test/c17_estados.http` | `test/integration/ordenes/test_estados_http.py::test_cuatro_estados_por_posicion_con_es_final_para_un_cliente_caso_c17`; `test/integration/seed/test_seed_http_catalogo.py::test_estados_orden_los_cuatro_por_posicion_c17` | Sin sesión 401; los cuatro estados por posición con `es_final` sólo en TERMINADA y CANCELADA; estado inventado 422 | Aprobado |
 | C-18 | `test/c18_historial_precios.http` | `test/integration/seed/test_seed_http_catalogo.py::test_historial_de_precios_del_filtro_tiene_una_linea_c18` | Cambiar el precio agrega una línea (8500.00 a 9000.00); cambiar la descripción no; la recepción recibe 403 | Aprobado |
@@ -76,7 +78,6 @@ veces. No toca código de este change. `pytest test/unit`: 958 tests, sin base d
 ## 5. Pendientes que sólo puede hacer el usuario
 
 - Correr en VS Code (extensión REST Client) al menos `c07_revocar_rol.http` y `c12_reponer_y_terminar.http`, re-sembrando antes de cada uno.
-- Tomar las capturas `docs/evidencias/c14_psql.png` y `docs/evidencias/c15_sql_echo.png` (los textos equivalentes ya están).
 - Decidir si se borra la base `taller_entrega` (`docker compose exec postgres dropdb -U <usuario> taller_entrega`). Por ahora se conserva.
 
 ## 6. Auditoría de entrega
