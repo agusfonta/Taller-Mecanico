@@ -1,5 +1,7 @@
 # Taller Mecánico
 
+- Integrantes: Agustina Fontagnol, Martina Suarez y Gianella Peña
+
 API asincrónica para un taller mecánico: clientes, vehículos, órdenes de trabajo, stock de repuestos y acceso por roles.
 Trabajo práctico de Programación III (TUP). Enunciado: `docs/TP_Cap1a6_Consigna.pdf`.
 
